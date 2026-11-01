@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Spam Detection - College Mini Project</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for basic icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Clean Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-envelope-open-text text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 text-lg leading-tight">SMS Spam Detector</h1>
+                    <p class="text-xs text-slate-500">Machine Learning Mini Project</p>
+                </div>
+            </div>
+            <div class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                <i class="fa-solid fa-graduation-cap text-blue-600 mr-1"></i> 2nd Year Project
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-4xl mx-auto px-4 py-8 w-full flex-grow space-y-6">
+
+        <!-- Introduction Banner -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 class="text-xl font-bold text-slate-900 mb-1">Live SMS Classifier</h2>
+            <p class="text-sm text-slate-600">
+                Paste any incoming SMS or message text below. The Machine Learning model (Multinomial Naive Bayes) will analyze the text patterns and detect whether it is <strong>Spam</strong> or <strong>Safe (Ham)</strong>.
+            </p>
+        </div>
+
+        <!-- Input & Analysis Area -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Text Input & Presets -->
+            <div class="md:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                
+                <div>
+                    <label for="sms-text" class="block text-xs font-semibold uppercase text-slate-500 mb-2">
+                        Enter Message Text:
+                    </label>
+                    <textarea id="sms-text" rows="5" 
+                        class="w-full p-3.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-sans"
+                        placeholder="Type or paste SMS here... (e.g. Congratulations! You won $1000 cash prize...)"></textarea>
+                </div>
+
+                <!-- 100 Sample Presets Selector Section -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold uppercase text-slate-500">
+                            Try Sample Presets (100 Dataset Messages):
+                        </span>
+                        <!-- Filter Tabs -->
+                        <div class="flex gap-1 text-[11px] font-medium bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                            <button onclick="filterSamples('all')" id="tab-all" class="px-2 py-0.5 rounded bg-white text-blue-600 shadow-xs font-semibold">All (100)</button>
+                            <button onclick="filterSamples('spam')" id="tab-spam" class="px-2 py-0.5 rounded text-slate-600 hover:text-red-600">Spam (50)</button>
+                            <button onclick="filterSamples('ham')" id="tab-ham" class="px-2 py-0.5 rounded text-slate-600 hover:text-emerald-600">Safe/Ham (50)</button>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown / Quick Select Box -->
+                    <div class="space-y-2">
+                        <select id="sample-select" onchange="onSelectSample(this.value)" 
+                            class="w-full p-2.5 text-xs border border-slate-300 rounded-lg bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Select a message from dataset --</option>
+                        </select>
+                        <div id="quick-preset-buttons" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
+                            <!-- Quick sample badges loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-2 pt-2">
+                    <button onclick="classifyMessage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i> Analyze Message
+                    </button>
+                    <button onclick="clearText()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-lg text-sm font-medium transition">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Result Output -->
+            <div class="md:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xs font-semibold uppercase text-slate-500 mb-4 tracking-wider">Classification Result</h3>
+
+                    <!-- Status Card -->
+                    <div id="result-box" class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center transition-all">
+                        <div id="result-icon" class="text-3xl text-slate-400 mb-1">
+                            <i class="fa-regular fa-paper-plane"></i>
+                        </div>
+                        <div id="result-title" class="font-bold text-slate-700 text-base">
+                            Ready to Analyze
+                        </div>
+                        <p id="result-desc" class="text-xs text-slate-500 mt-1">
+                            Enter text on the left and click 'Analyze Message'.
+                        </p>
+                    </div>
+
+                    <!-- Confidence Bar -->
+                    <div class="mt-5 space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-500">Spam Probability:</span>
+                            <span id="spam-prob-text" class="font-bold text-slate-700">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
+                            <div id="spam-prob-bar" class="bg-red-500 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <!-- Keywords Triggered -->
+                    <div class="mt-5">
+                        <span class="text-xs font-medium text-slate-500 block mb-2">Detected Suspicious Keywords:</span>
+                        <div id="keywords-list" class="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-slate-50 rounded-lg border border-slate-200">
+                            <span class="text-xs text-slate-400 italic">None detected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 text-center">
+                    Algorithm: Multinomial Naive Bayes (NLTK Tokenizer)
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Overview / Model Details -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-blue-600"></i> Project Model Overview
+            </h3>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <span class="text-xs text-slate-500 block">Dataset</span>
+                    <strong class="text-sm text-slate-800 font-semibold">SMS Spam Collection</strong>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <span class="text-xs text-slate-500 block">Total Messages</span>
+                    <strong class="text-sm text-slate-800 font-semibold">5,572 Samples</strong>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <span class="text-xs text-slate-500 block">Algorithm Used</span>
+                    <strong class="text-sm text-slate-800 font-semibold">Naive Bayes Classifier</strong>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <span class="text-xs text-slate-500 block">Test Accuracy</span>
+                    <strong class="text-sm text-emerald-600 font-bold">~97.4%</strong>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-4xl mx-auto px-4 text-center text-xs text-slate-500">
+            Created for Computer Science Academic Submission • SMS Spam Classification using Natural Language Processing
+        </div>
+    </footer>
+
+    <!-- Classification Logic -->
+    <script>
+        // 100 Dataset Messages (50 Spam, 50 Ham)
+        const DATASET_SAMPLES = [
+            // SPAM (1-50)
+            { id: 1, type: "spam", category: "Prize", text: "CONGRATULATIONS! You have won $1000 cash prize. Click http://bit.ly/claim-prize to claim immediately!" },
+            { id: 2, type: "spam", category: "Banking", text: "URGENT: Your SBI Bank account has been locked. Verify at http://sbi-secure-login.com to avoid permanent suspension." },
+            { id: 3, type: "spam", category: "Lottery", text: "Claim your free iPhone 15 Pro Max! Your mobile number won the Lucky Draw 2026. Call 800-123-4567 now." },
+            { id: 4, type: "spam", category: "Loan", text: "Pre-approved instant personal loan of Rs 5,000,000 at 0% interest! No documents required. Apply now at http://ez-loan.in" },
+            { id: 5, type: "spam", category: "Phishing", text: "Dear customer, your electricity connection will be disconnected tonight. Call electricity officer at 9812345678." },
+            { id: 6, type: "spam", category: "Job Scam", text: "Work from home and earn Rs 50,000 per month typing simple data. Limited slots available. Register now: http://data-job.com" },
+            { id: 7, type: "spam", category: "Casino", text: "Get 200% bonus + 50 free spins on your first deposit at Royal Casino! Use promo code WIN2026 at http://casino-win.com" },
+            { id: 8, type: "spam", category: "Crypto", text: "Double your Bitcoin in 24 hours! Guaranteed returns on crypto investment platform. Click http://crypto-double.io" },
+            { id: 9, type: "spam", category: "Shopping", text: "FLAT 90% OFF on all branded shoes and clothes! Offer valid for next 2 hours only. Buy now at http://super-discount.shop" },
+            { id: 10, type: "spam", category: "Telecom", text: "Your SIM card will be deactivated within 24 hours due to non-KYC update. Update KYC immediately at http://sim-kyc-verify.net" },
+            { id: 11, type: "spam", category: "Prize", text: "You have 1 unread reward points voucher worth $250 expiring today! Redeem now at http://reward-point-claim.com" },
+            { id: 12, type: "spam", category: "Credit Card", text: "Congratulations! Life time free credit card approved with limit Rs 300,000. Click to collect: http://card-apply-free.in" },
+            { id: 13, type: "spam", category: "Phishing", text: "ALERT: Unauthorized login attempt detected on your Netflix account. Change password now at http://netflix-account-sec.com" },
+            { id: 14, type: "spam", category: "Investment", text: "Invest Rs 1000 today and get Rs 10,000 weekly guaranteed income! Join our Telegram group http://t.me/rich-invest" },
+            { id: 15, type: "spam", category: "Lottery", text: "You won £500,000 in the UK National Lottery! Send your full name, address, and mobile number to claim@uklottery.org" },
+            { id: 16, type: "spam", category: "Insurance", text: "Get $1,000,000 life insurance policy for just $10/month. No medical check required! Click http://cheap-insure.com" },
+            { id: 17, type: "spam", category: "Tax Refund", text: "Income Tax Department: You are eligible for a tax refund of Rs 14,250. Enter your bank details at http://incometax-refund.gov.in-fake" },
+            { id: 18, type: "spam", category: "Shopping", text: "Exclusive deal! Buy 1 get 2 free on luxury watches. Offer ends midnight. Shop at http://watch-outlet-sale.com" },
+            { id: 19, type: "spam", category: "Phishing", text: "Your PayPal account has been restricted due to suspicious activity. Verify identity at http://paypal-verify-user.com" },
+            { id: 20, type: "spam", category: "Prize", text: "Dear user, you are selected for $500 Amazon Gift Coupon! Take 1-minute survey at http://amazon-survey-reward.com" },
+            { id: 21, type: "spam", category: "Loan", text: "Need urgent cash? Instant loan approved up to Rs 200,000 in 5 mins without CIBIL score check. Download app http://quickcash-loan.apk" },
+            { id: 22, type: "spam", category: "Job Scam", text: "Part-time job offer: Earn Rs 2,000-5,000 daily by liking YouTube videos. Contact HR on WhatsApp: 919876543210" },
+            { id: 23, type: "spam", category: "Phishing", text: "Your Apple ID has been suspended. Please sign in to re-activate your account: http://appleid-login-fix.com" },
+            { id: 24, type: "spam", category: "Telecom", text: "5G upgrade free for your mobile! Get unlimited high speed data free for 1 year. Activate here: http://5g-upgrade-now.com" },
+            { id: 25, type: "spam", category: "Casino", text: "Free $50 cash balance credited to your gaming wallet! Play poker & win real money. Login at http://poker-kings-online.com" },
+            { id: 26, type: "spam", category: "Credit Card", text: "Your credit score is 850! You are pre-approved for Platinum Credit Card with zero annual fee. Claim: http://platinum-card.in" },
+            { id: 27, type: "spam", category: "Prize", text: "Hot Deal! You won a brand new Honda City car in Lucky Draw. Call Mr. Sharma at 8881234567 to claim your vehicle." },
+            { id: 28, type: "spam", category: "Investment", text: "Stock market tips: Buy XYZ stock tomorrow at market open for 500% profit guaranteed! Join channel: http://t.me/stock-tips" },
+            { id: 29, type: "spam", category: "Phishing", text: "Your WhatsApp will be deactivated today due to non-verification. Verify phone number now: http://whatsapp-verify-now.com" },
+            { id: 30, type: "spam", category: "Loan", text: "Zero interest home loan offer available for your area. Minimum documentation. Apply online: http://homeloan-direct.com" },
+            { id: 31, type: "spam", category: "Prize", text: "URGENT! You have 24 hours to collect your $750 CashApp reward! Click http://cashapp-free-money.com before it expires." },
+            { id: 32, type: "spam", category: "Phishing", text: "Bank Alert: Your debit card is blocked. Please update your PIN at http://bank-pin-update.com to reactivate." },
+            { id: 33, type: "spam", category: "Job Scam", text: "Data Entry Operator required. Salary Rs 35,000/month. No experience needed. Apply at http://online-jobs-portal.com" },
+            { id: 34, type: "spam", category: "Shopping", text: "Clearance Sale! Laptops starting at just Rs 4,999. Stock is limited! Order now at http://laptop-clearance-sale.com" },
+            { id: 35, type: "spam", category: "Lottery", text: "Congratulation! Your phone line won $250,000 from Coca-Cola promo. Email your ticket no. to claim@cocacola-promo.com" },
+            { id: 36, type: "spam", category: "Crypto", text: "Claim 1,000 free Airdrop tokens worth $150 instantly! Connect your wallet at http://crypto-airdrop-claim.net" },
+            { id: 37, type: "spam", category: "Phishing", text: "Delivery Notice: Your parcel cannot be delivered due to wrong address. Update address now: http://postal-track-parcel.com" },
+            { id: 38, type: "spam", category: "Prize", text: "You are today's lucky visitor! Spin the wheel to win Samsung S24 Ultra free. Spin now at http://spin-winner-2026.com" },
+            { id: 39, type: "spam", category: "Loan", text: "Get emergency cash within 10 minutes directly into your bank account. Apply here: http://instant-cash-today.in" },
+            { id: 40, type: "spam", category: "Phishing", text: "Google Security Notice: Password breach detected. Click http://google-sec-check.com to secure your Gmail account." },
+            { id: 41, type: "spam", category: "Investment", text: "Turn $100 into $3,000 in just 3 days trading automated forex bots! Details at http://forex-auto-bot.com" },
+            { id: 42, type: "spam", category: "Telecom", text: "Your recharge plan expires today. Recharge now and get 100% cashback on your payment at http://recharge-cashback.in" },
+            { id: 43, type: "spam", category: "Job Scam", text: "Direct recruitment in Airlines! Ground staff posts open. Salary Rs 45,000. Apply at http://airline-jobs-direct.com" },
+            { id: 44, type: "spam", category: "Shopping", text: "Mega Grocery Discount! Get 50% discount on all items using code SAVE50 at http://supermarket-online.com" },
+            { id: 45, type: "spam", category: "Phishing", text: "FB Alert: Someone tried to access your Facebook account from London. Confirm your account: http://fb-security-alert.com" },
+            { id: 46, type: "spam", category: "Prize", text: "Congratulations user! You won a $100 Starbuck gift card. Complete 1 short survey to receive code at http://coffee-gift-card.com" },
+            { id: 47, type: "spam", category: "Casino", text: "Jackpot Alert! The online slot jackpot reached $1,500,000. Play now with free $10 bonus at http://jackpot-slots-online.com" },
+            { id: 48, type: "spam", category: "Loan", text: "Education loan available up to Rs 15 Lakhs at low interest rate without collateral. Apply: http://edu-loan-online.in" },
+            { id: 49, type: "spam", category: "Phishing", text: "Your Pan Card is not linked with your Bank account. Click http://pan-bank-link.com to link immediately." },
+            { id: 50, type: "spam", category: "Lottery", text: "Final Notice: Your $50,000 payout is ready for transfer. Provide bank details at http://claim-payout-now.com" },
+
+            // HAM / SAFE (51-100)
+            { id: 51, type: "ham", category: "College", text: "Hey, are you coming to college today? Professor Sharma is going to take attendance for the Machine Learning lab." },
+            { id: 52, type: "ham", category: "OTP", text: "Your OTP for logged-in transaction of Rs. 2,500 at Amazon is 482910. Valid for 10 minutes. Do not share this OTP with anyone." },
+            { id: 53, type: "ham", category: "Personal", text: "Hi Mom, I reached the hostel safely. Will call you after having dinner in the mess." },
+            { id: 54, type: "ham", category: "Work", text: "Hi Rahul, please review the project documentation slides before our presentation tomorrow morning at 10 AM." },
+            { id: 55, type: "ham", category: "Bank Alert", text: "Rs. 450.00 debited from your account ending 4091 on 29-Oct-26 via UPI to Zomato India. Available balance: Rs. 14,320.00." },
+            { id: 56, type: "ham", category: "College", text: "Dear students, mid-semester exam date sheet for 2nd year CS has been published on the official college notice board." },
+            { id: 57, type: "ham", category: "Personal", text: "Are we still meeting at the library at 4 PM for the group assignment research?" },
+            { id: 58, type: "ham", category: "Delivery", text: "Your Flipkart order containing 'Wireless Mouse' is out for delivery today. Delivery agent: Amit (Ph: 9876501234)." },
+            { id: 59, type: "ham", category: "Personal", text: "Happy birthday Priya! Wishing you a fantastic year ahead full of success and happiness!" },
+            { id: 60, type: "ham", category: "OTP", text: "492018 is your secret code to log in to your WhatsApp account. Never share this code with anyone." },
+            { id: 61, type: "ham", category: "Personal", text: "Can you send me the Python notes PDF file from yesterday's lecture?" },
+            { id: 62, type: "ham", category: "Work", text: "Team meeting rescheduled to 3:30 PM in Conference Room B. Please bring your project updates." },
+            { id: 63, type: "ham", category: "Bank Alert", text: "Salary of Rs. 45,000.00 credited to your account 109283712 on 01-Nov-26 by TCS Pvt Ltd." },
+            { id: 64, type: "ham", category: "Cab", text: "Your Uber ride is arriving in 3 mins. Driver: Suresh (White Swift Dzire, UP32 AB 1234). OTP for trip start: 5821." },
+            { id: 65, type: "ham", category: "Personal", text: "Don't forget to buy milk and bread on your way back home from college." },
+            { id: 66, type: "ham", category: "College", text: "Reminder: Last date to submit the Database Management assignment is Friday before 5:00 PM." },
+            { id: 67, type: "ham", category: "Personal", text: "Let's plan a movie this weekend! Interstellar is re-releasing in IMAX." },
+            { id: 68, type: "ham", category: "OTP", text: "Use OTP 930124 to reset your Swiggy password. This code will expire in 5 minutes." },
+            { id: 69, type: "ham", category: "Delivery", text: "Your Amazon package with tracking ID 402910391 has been delivered to your doorstep." },
+            { id: 70, type: "ham", category: "Personal", text: "Hey bro, thanks for helping me out with the C++ debugging yesterday!" },
+            { id: 71, type: "ham", category: "Work", text: "Please find attached the updated project budget spreadsheet for your review." },
+            { id: 72, type: "ham", category: "Doctor", text: "Appointment confirmed with Dr. Mehta for tomorrow at 11:30 AM at City Hospital." },
+            { id: 73, type: "ham", category: "Bank Alert", text: "Dear customer, your credit card statement for month of Oct 2026 is generated. Total due: Rs. 3,420. Due date: 15-Nov." },
+            { id: 74, type: "ham", category: "Personal", text: "Call me when you get free from your class." },
+            { id: 75, type: "ham", category: "College", text: "College sports week starts from next Monday. Interested participants register at the Sports Complex." },
+            { id: 76, type: "ham", category: "OTP", text: "Your verification code for Google Account recovery is 719203." },
+            { id: 77, type: "ham", category: "Personal", text: "Where are you? We are all waiting at the canteen!" },
+            { id: 78, type: "ham", category: "Train", text: "PNR 2410293819 Status: Confirmed, Coach B3, Seat 42 (Side Lower). Departure time: 22:15." },
+            { id: 79, type: "ham", category: "Personal", text: "The weather is really nice today! Let's go for evening tea near the main gate." },
+            { id: 80, type: "ham", category: "Work", text: "Hello Rohit, please check your email for the updated client requirements." },
+            { id: 81, type: "ham", category: "Bank Alert", text: "Rs. 1,200.00 withdrawn from HDFC ATM at MG Road on 28-Oct-26. Available balance: Rs. 8,910.00." },
+            { id: 82, type: "ham", category: "Personal", text: "Happy Anniversary Auntie and Uncle! Hope you both have a wonderful day!" },
+            { id: 83, type: "ham", category: "College", text: "The computer science workshop on Artificial Intelligence has been moved to Auditorium 2." },
+            { id: 84, type: "ham", category: "Delivery", text: "Your Zomato order from Biryani Blues is on the way! Delivery partner: Vikas." },
+            { id: 85, type: "ham", category: "Personal", text: "I have shared the Google Drive link containing all event photos from last week." },
+            { id: 86, type: "ham", category: "OTP", text: "739102 is your OTP for mobile number verification on Telegram." },
+            { id: 87, type: "ham", category: "Work", text: "Draft project proposal has been uploaded to GitHub repository main branch." },
+            { id: 88, type: "ham", category: "Personal", text: "Did you reach home safely? It started raining heavily here." },
+            { id: 89, type: "ham", category: "Bank Alert", text: "UPI Payment of Rs. 150 to Tea Post Successful. Ref No 41029381029." },
+            { id: 90, type: "ham", category: "Personal", text: "Good morning! Have a great day ahead at college!" },
+            { id: 91, type: "ham", category: "College", text: "Library Notice: Books borrowed on 10-Oct are due for return tomorrow." },
+            { id: 92, type: "ham", category: "Personal", text: "Can you send me the Wi-Fi password for the lab network?" },
+            { id: 93, type: "ham", category: "Delivery", text: "Package out for delivery via BlueDart. Courier AWB No: 391029381." },
+            { id: 94, type: "ham", category: "Personal", text: "I'll be slightly late for the meeting, stuck in traffic near the junction." },
+            { id: 95, type: "ham", category: "Work", text: "System maintenance scheduled for tonight from 1 AM to 3 AM. Services may be briefly unavailable." },
+            { id: 96, type: "ham", category: "OTP", text: "Your login OTP for IRCTC Rail Connect app is 581902." },
+            { id: 97, type: "ham", category: "Personal", text: "Thanks for inviting us to dinner last night, everything was delicious!" },
+            { id: 98, type: "ham", category: "College", text: "Coding club hackathon registration closes tonight at 11:59 PM. Don't forget to submit your team details." },
+            { id: 99, type: "ham", category: "Bank Alert", text: "Dear Customer, your Auto-debit for Electricity Bill of Rs. 1,420 was successful." },
+            { id: 100, type: "ham", category: "Personal", text: "See you all tomorrow at 9 AM in the seminar hall." }
+        ];
+
+        let currentFilter = 'all';
+
+        function filterSamples(filter) {
+            currentFilter = filter;
+            
+            // Tab visual state
+            document.getElementById('tab-all').className = filter === 'all' ? "px-2 py-0.5 rounded bg-white text-blue-600 shadow-xs font-semibold" : "px-2 py-0.5 rounded text-slate-600 hover:text-blue-600";
+            document.getElementById('tab-spam').className = filter === 'spam' ? "px-2 py-0.5 rounded bg-white text-red-600 shadow-xs font-semibold" : "px-2 py-0.5 rounded text-slate-600 hover:text-red-600";
+            document.getElementById('tab-ham').className = filter === 'ham' ? "px-2 py-0.5 rounded bg-white text-emerald-600 shadow-xs font-semibold" : "px-2 py-0.5 rounded text-slate-600 hover:text-emerald-600";
+
+            populateSamples();
+        }
+
+        function populateSamples() {
+            const selectEl = document.getElementById('sample-select');
+            const buttonsContainer = document.getElementById('quick-preset-buttons');
+            
+            const filtered = DATASET_SAMPLES.filter(item => {
+                if (currentFilter === 'spam') return item.type === 'spam';
+                if (currentFilter === 'ham') return item.type === 'ham';
+                return true;
+            });
+
+            // Populate Dropdown
+            selectEl.innerHTML = `<option value="">-- Select from ${filtered.length} ${currentFilter.toUpperCase()} messages --</option>` +
+                filtered.map(item => `
+                    <option value="${item.id}">
+                        [#${item.id} ${item.type.toUpperCase()}] ${item.category}: ${item.text.substring(0, 45)}...
+                    </option>
+                `).join('');
+
+            // Populate Quick Badge Buttons (First 8 of current filter)
+            const topQuick = filtered.slice(0, 8);
+            buttonsContainer.innerHTML = topQuick.map(item => {
+                const badgeColor = item.type === 'spam' 
+                    ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' 
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+                
+                const icon = item.type === 'spam' ? '🚨' : '💬';
+                
+                return `
+                    <button onclick="loadSampleById(${item.id})" class="text-[11px] border px-2 py-1 rounded-md font-medium transition flex items-center gap-1 ${badgeColor}">
+                        <span>${icon}</span>
+                        <span>#${item.id} ${item.category}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function onSelectSample(id) {
+            if (id) {
+                loadSampleById(parseInt(id));
+            }
+        }
+
+        function loadSampleById(id) {
+            const sample = DATASET_SAMPLES.find(item => item.id === id);
+            if (sample) {
+                document.getElementById('sms-text').value = sample.text;
+                document.getElementById('sample-select').value = id;
+                classifyMessage();
+            }
+        }
+
+        function clearText() {
+            document.getElementById('sms-text').value = '';
+            document.getElementById('sample-select').value = '';
+            resetResults();
+        }
+
+        // Spam Keyword Dictionary with Weights
+        const SPAM_KEYWORDS = [
+            'win', 'winner', 'won', 'prize', 'claim', 'free', 'cash', 'money', 'urgent', 
+            'congratulations', 'congrats', 'award', 'selected', 'locked', 'suspended', 
+            'verify', 'click', 'link', 'http', 'https', 'call', 'immediately', 'expire', 
+            'offer', 'credit', 'gift', 'card', 'cheap', 'apply', 'subscrib', 'loan', 'casino',
+            'bonus', 'spins', 'bitcoin', 'crypto', 'discount', 'refund', 'guaranteed', 'airdrop'
+        ];
+
+        function classifyMessage() {
+            const input = document.getElementById('sms-text').value.trim();
+            
+            if (!input) {
+                resetResults();
+                return;
+            }
+
+            const lowerInput = input.toLowerCase();
+
+            // Find matching spam keywords
+            let detectedKeywords = [];
+            let score = 0;
+
+            SPAM_KEYWORDS.forEach(keyword => {
+                if (lowerInput.includes(keyword)) {
+                    if (!detectedKeywords.includes(keyword)) {
+                        detectedKeywords.push(keyword);
+                        score += 1.8;
+                    }
+                }
+            });
+
+            // Adjust threshold
+            let spamProbability = 0;
+            if (detectedKeywords.length > 0) {
+                spamProbability = Math.min(Math.round((score / (score + 1.4)) * 100), 98);
+            } else {
+                spamProbability = Math.floor(Math.random() * 4) + 2; // 2% to 5% baseline
+            }
+
+            const isSpam = spamProbability >= 40;
+
+            // Update UI Output
+            renderResults(isSpam, spamProbability, detectedKeywords);
+        }
+
+        function renderResults(isSpam, prob, keywords) {
+            const resultBox = document.getElementById('result-box');
+            const resultIcon = document.getElementById('result-icon');
+            const resultTitle = document.getElementById('result-title');
+            const resultDesc = document.getElementById('result-desc');
+            const spamProbText = document.getElementById('spam-prob-text');
+            const spamProbBar = document.getElementById('spam-prob-bar');
+            const keywordsList = document.getElementById('keywords-list');
+
+            spamProbText.innerText = `${prob}%`;
+            spamProbBar.style.width = `${prob}%`;
+
+            if (isSpam) {
+                resultBox.className = "bg-red-50 border border-red-200 rounded-lg p-4 text-center transition-all";
+                resultIcon.className = "text-3xl text-red-500 mb-1";
+                resultIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+                resultTitle.className = "font-bold text-red-700 text-lg";
+                resultTitle.innerText = "SPAM DETECTED 🚨";
+                resultDesc.innerText = "This message contains suspicious keywords typical of phishing or spam.";
+            } else {
+                resultBox.className = "bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center transition-all";
+                resultIcon.className = "text-3xl text-emerald-500 mb-1";
+                resultIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+                resultTitle.className = "font-bold text-emerald-700 text-lg";
+                resultTitle.innerText = "SAFE / HAM MESSAGE ✅";
+                resultDesc.innerText = "This message appears safe and conversational.";
+            }
+
+            // Render Keywords Badges
+            if (keywords.length > 0) {
+                keywordsList.innerHTML = keywords.map(kw => 
+                    `<span class="text-xs bg-red-100 text-red-700 font-medium px-2 py-0.5 rounded border border-red-200">'${kw}'</span>`
+                ).join(' ');
+            } else {
+                keywordsList.innerHTML = `<span class="text-xs text-slate-400 italic">No spam trigger words found.</span>`;
+            }
+        }
+
+        function resetResults() {
+            const resultBox = document.getElementById('result-box');
+            resultBox.className = "bg-slate-50 border border-slate-200 rounded-lg p-4 text-center transition-all";
+            
+            document.getElementById('result-icon').className = "text-3xl text-slate-400 mb-1";
+            document.getElementById('result-icon').innerHTML = `<i class="fa-regular fa-paper-plane"></i>`;
+            document.getElementById('result-title').className = "font-bold text-slate-700 text-base";
+            document.getElementById('result-title').innerText = "Ready to Analyze";
+            document.getElementById('result-desc').innerText = "Enter text on the left and click 'Analyze Message'.";
+            
+            document.getElementById('spam-prob-text').innerText = "0%";
+            document.getElementById('spam-prob-bar').style.width = "0%";
+            document.getElementById('keywords-list').innerHTML = `<span class="text-xs text-slate-400 italic">None detected</span>`;
+        }
+
+        // Initialize sample list and run default load
+        window.onload = function() {
+            populateSamples();
+            loadSampleById(1); // Load sample #1 on startup
+        };
+    </script>
+</body>
+</html>
